@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>音楽鑑賞コメント</title>
+<style>
+  :root{
+    --bg:#f6f4ef; --card:#fff; --ink:#22201c; --sub:#6b665d; --line:#e2ddd3;
+    --accent:#2f5d50; --accent-soft:#e3eee9; --err:#b3261e;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Hiragino Sans","Noto Sans JP","Yu Gothic","PingFang SC","Noto Sans SC","Microsoft YaHei",system-ui,sans-serif;line-height:1.6}
+  html[lang=zh-CN] body{font-family:"PingFang SC","Noto Sans SC","Microsoft YaHei","Hiragino Sans",system-ui,sans-serif}
+  main{max-width:640px;margin:0 auto;padding:24px 16px 64px}
+  .langbar{display:flex;justify-content:flex-end;gap:6px;margin-bottom:10px}
+  .lang{border:1px solid var(--line);border-radius:999px;padding:5px 14px;background:#fff;font:inherit;
+    font-size:.85rem;cursor:pointer;color:var(--ink)}
+  .lang[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:700}
+  h1{font-size:1.4rem;margin:0 0 4px}
+  .lead{color:var(--sub);margin:0 0 20px;font-size:.95rem}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:16px}
+  .card h2{font-size:1rem;margin:0 0 12px}
+  label{display:block;font-weight:600;font-size:.92rem;margin:12px 0 6px}
+  label:first-of-type{margin-top:0}
+  .req{color:var(--err);font-weight:400;font-size:.8rem;margin-left:4px}
+  input[type=text],textarea{width:100%;font:inherit;font-size:16px;padding:10px 12px;
+    border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+  textarea{min-height:170px;resize:vertical}
+  input:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px;border-color:transparent}
+  .songs{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:8px}
+  .song{border:1px solid var(--line);border-radius:10px;padding:9px 4px;text-align:center;cursor:pointer;
+    background:#fff;font:inherit;font-size:.95rem;color:var(--ink);position:relative}
+  .song small{display:block;color:var(--sub);font-size:.72rem;line-height:1.3;margin-top:2px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .song[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#fff}
+  .song[aria-pressed=true] small{color:#dfeae5}
+  .song.done::after{content:"✓";position:absolute;top:3px;right:7px;font-size:.75rem;color:var(--accent)}
+  .song.done[aria-pressed=true]::after{color:#fff}
+  .tags{display:flex;flex-wrap:wrap;gap:6px}
+  .tag{border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:#fff;font:inherit;
+    font-size:.88rem;cursor:pointer;color:var(--ink)}
+  .tag[aria-pressed=true]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+  .hint{color:var(--sub);font-size:.82rem;margin:6px 0 0}
+  .count{text-align:right;color:var(--sub);font-size:.8rem;margin-top:4px}
+  .btn{display:block;width:100%;border:0;border-radius:12px;padding:14px;font:inherit;font-weight:700;
+    font-size:1.05rem;background:var(--accent);color:#fff;cursor:pointer}
+  .btn:disabled{opacity:.5;cursor:default}
+  .btn.ghost{background:#fff;color:var(--accent);border:1px solid var(--accent);font-size:.92rem;padding:10px;margin-top:8px}
+  .msg{border-radius:10px;padding:12px 14px;margin-top:12px;font-size:.92rem;display:none}
+  .msg.ok{display:block;background:var(--accent-soft);color:var(--accent)}
+  .msg.ng{display:block;background:#fbeaea;color:var(--err)}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<main>
+  <div class="langbar" role="group" aria-label="Language">
+    <button class="lang" type="button" data-lang="ja">日本語</button>
+    <button class="lang" type="button" data-lang="zh">中文</button>
+  </div>
+  <h1 id="title">音楽鑑賞コメント</h1>
+  <p class="lead" data-i18n="lead"></p>
+
+  <!-- Netlify Forms: この form がデプロイ時に検出されます -->
+  <form id="f" name="music-comment" method="POST" data-netlify="true" netlify-honeypot="bot-field">
+    <input type="hidden" name="form-name" value="music-comment">
+    <p class="hidden"><label>bot <input name="bot-field"></label></p>
+    <input type="hidden" name="class" id="classField">
+    <input type="hidden" name="song" id="songField">
+    <input type="hidden" name="impressions" id="tagField">
+    <input type="hidden" name="sent_at" id="timeField">
+
+    <section class="card">
+      <h2 data-i18n="you"></h2>
+      <label for="sid"><span data-i18n="sid"></span><span class="req" data-i18n="req"></span></label>
+      <input type="text" id="sid" name="student_id" autocomplete="off" required>
+      <label for="sname"><span data-i18n="name"></span><span class="req" data-i18n="req"></span></label>
+      <input type="text" id="sname" name="name" autocomplete="name" required>
+      <p class="hint" data-i18n="remember"></p>
+    </section>
+
+    <section class="card">
+      <h2><span data-i18n="which"></span><span class="req" data-i18n="req"></span></h2>
+      <div class="songs" id="songs"></div>
+    </section>
+
+    <section class="card">
+      <h2 data-i18n="felt"></h2>
+      <label data-i18n="impr"></label>
+      <div class="tags" id="tags"></div>
+
+      <label for="comment"><span data-i18n="comment"></span><span class="req" data-i18n="req"></span></label>
+      <textarea id="comment" name="comment" required></textarea>
+      <div class="count" id="count"></div>
+      <p class="hint" data-i18n="tip"></p>
+    </section>
+
+    <button class="btn" id="send" type="submit"></button>
+    <div class="msg" id="msg" role="status"></div>
+    <button class="btn ghost hidden" id="copy" type="button" data-i18n="copyBtn"></button>
+  </form>
+</main>
+
+<script>
+/* ===== 先生用の設定（ここだけ書き換えればOK） ===== */
+const CONFIG = {
+  // ↓ Googleスプレッドシートに保存する場合、Apps ScriptのウェブアプリURLを貼る（空ならNetlify Formsに送信）
+  endpoint: "https://script.google.com/macros/s/AKfycbzNfgoGogQ1Lm5CeyxQ5i6GsTMrTtHyF40tFNvkveIK0CifOZWzExPwZN0OwJLd_0ZC/exec",
+  title: "音楽鑑賞コメント",          // ページの見出し（日本語表示のとき）
+  titleZh: "音乐鉴赏评论",            // ページの見出し（中国語表示のとき）
+  className: "",                     // 授業名・クラス名（メールに載ります）例："音楽鑑賞A 第5回"
+  songCount: 50,                     // 曲数
+  songTitles: [],                    // 曲名を出したい場合：["月の光","ボレロ", ...]（空なら「◯曲目」だけ）
+  minLength: 0,                      // コメントの最低文字数（0で制限なし）
+  // 印象タグ：スプレッドシートには左の日本語で保存されます（中国語表示でも集計がそろう）
+  tags: [["明るい","明快"],["切ない","伤感"],["力強い","有力"],["穏やか","平和"],["不思議","神秘"],
+         ["懐かしい","怀旧"],["かっこいい","帅气"],["怖い","可怕"],["楽しい","快乐"],["美しい","优美"]]
+};
+/* URLでも上書きできます：  ?n=8&class=音楽鑑賞A第5回&lang=zh  */
+/* ============================================== */
+
+const T = {
+  ja: {
+    lead: "曲が終わったら、何曲目かを選んで感じたことを書き、送信してください。1曲ごとに送ります。",
+    you: "あなたの情報", sid: "学籍番号", name: "名前", req: "必須",
+    remember: "この端末に記憶されるので、2曲目以降は入力不要です。",
+    which: "何曲目？", felt: "感じたこと", impr: "印象（いくつでも・任意）", comment: "コメント",
+    placeholder: "例：イントロのピアノが静かで、雨の日の朝みたいだと思った。サビで急に音が厚くなって…",
+    tip: "ヒント：楽器・リズム・テンポ・音の大きさの変化、思い浮かんだ景色や気持ち、好きな部分など。",
+    send: "送信する", sending: "送信中…", copyBtn: "送れなかった場合：内容をコピー",
+    song: i => i + "曲目",
+    chars: (n, min) => n + "文字" + (min ? "（" + min + "文字以上）" : ""),
+    errInfo: "学籍番号と名前を入力してください。",
+    errSong: "何曲目かを選んでください。",
+    errLen: m => "コメントを" + m + "文字以上書いてください。",
+    again: s => s + "はもう送信済みです。もう一度送る場合は、もう一度「送信する」を押してください。",
+    ok: s => s + " のコメントを送信しました。ありがとう！",
+    fail: "送信できませんでした。通信状況を確認してもう一度送信してください。（書いた内容は消えていません）",
+    copied: "コピーしました。先生の指示に従って提出してください。",
+    copyFail: "コピーできませんでした。画面のスクリーンショットを撮っておいてください。",
+    sClass: "授業：", sSid: "学籍番号：", sName: "名前：", sSong: "曲：", sImpr: "印象：", sComment: "コメント：", sep: "、"
+  },
+  zh: {
+    lead: "每首曲子结束后，请选择是第几首，写下你的感受并提交。每首曲子分别提交一次。",
+    you: "你的信息", sid: "学号", name: "姓名", req: "必填",
+    remember: "信息会保存在本设备上，从第2首开始无需再次填写。",
+    which: "第几首？", felt: "你的感受", impr: "印象（可多选・选填）", comment: "评论",
+    placeholder: "例：前奏的钢琴很安静，让我想到下雨天的早晨。到了副歌，声音一下子变得厚重……",
+    tip: "提示：乐器、节奏、速度、音量的变化，想到的画面或心情，喜欢的部分等。",
+    send: "提交", sending: "提交中…", copyBtn: "无法提交时：复制内容",
+    song: i => "第" + i + "首",
+    chars: (n, min) => n + "字" + (min ? "（至少" + min + "字）" : ""),
+    errInfo: "请填写学号和姓名。",
+    errSong: "请选择是第几首。",
+    errLen: m => "评论请至少写" + m + "个字。",
+    again: s => s + "已经提交过了。如需再次提交，请再按一次「提交」。",
+    ok: s => s + "的评论已提交。谢谢！",
+    fail: "提交失败。请检查网络后重新提交。（你写的内容没有丢失）",
+    copied: "已复制。请按照老师的指示提交。",
+    copyFail: "无法复制。请先截屏保存画面。",
+    sClass: "课程：", sSid: "学号：", sName: "姓名：", sSong: "曲目：", sImpr: "印象：", sComment: "评论：", sep: "、"
+  }
+};
+
+const q = new URLSearchParams(location.search);
+if (q.get("n") && +q.get("n") > 0) CONFIG.songCount = Math.min(50, Math.floor(+q.get("n")));
+if (q.get("class")) CONFIG.className = q.get("class");
+
+const $ = id => document.getElementById(id);
+const store = {
+  get(k){ try{ return localStorage.getItem(k) }catch(e){ return null } },
+  set(k,v){ try{ localStorage.setItem(k,v) }catch(e){} }
+};
+
+let lang = (q.get("lang") || store.get("mc-lang") || (/^zh/i.test(navigator.language || "") ? "zh" : "ja"));
+if (!T[lang]) lang = "ja";
+const L = () => T[lang];
+
+const doneKey = "mc-done-" + (CONFIG.className || "default") + "-" + new Date().toDateString();
+const MIN = Math.max(1, CONFIG.minLength);
+
+$("classField").value = CONFIG.className;
+$("sid").value = store.get("mc-sid") || "";
+$("sname").value = store.get("mc-name") || "";
+
+let done = new Set();
+try { done = new Set(JSON.parse(store.get(doneKey) || "[]")) } catch(e) {}
+let current = null;
+
+// スプレッドシートに保存する曲名（言語に関係なく日本語でそろえる）
+function songLabelJa(i){
+  const t = CONFIG.songTitles[i-1];
+  return i + "曲目" + (t ? "「" + t + "」" : "");
+}
+// 画面に出す曲名
+function songLabel(i){
+  const t = CONFIG.songTitles[i-1];
+  return L().song(i) + (t ? "「" + t + "」" : "");
+}
+
+function renderSongs(){
+  const box = $("songs"); box.innerHTML = "";
+  for (let i = 1; i <= CONFIG.songCount; i++){
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "song" + (done.has(i) ? " done" : "");
+    b.setAttribute("aria-pressed", current === i);
+    b.textContent = L().song(i);
+    if (CONFIG.songTitles[i-1]) { const sm = document.createElement("small"); sm.textContent = CONFIG.songTitles[i-1]; b.appendChild(sm); }
+    b.onclick = () => { current = i; renderSongs(); };
+    box.appendChild(b);
+  }
+}
+
+const picked = new Set();   // 日本語のタグ名で持つ
+function renderTags(){
+  const box = $("tags"); box.innerHTML = "";
+  CONFIG.tags.forEach(([ja, zh]) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "tag"; b.textContent = lang === "zh" ? zh : ja;
+    b.setAttribute("aria-pressed", picked.has(ja));
+    b.onclick = () => {
+      picked.has(ja) ? picked.delete(ja) : picked.add(ja);
+      b.setAttribute("aria-pressed", picked.has(ja));
+    };
+    box.appendChild(b);
+  });
+}
+const tagText = ja => { const p = CONFIG.tags.find(t => t[0] === ja); return lang === "zh" && p ? p[1] : ja; };
+
+function updateCount(){
+  const n = $("comment").value.trim().length;
+  $("count").textContent = L().chars(n, CONFIG.minLength);
+}
+$("comment").addEventListener("input", updateCount);
+
+function applyLang(){
+  document.documentElement.lang = lang === "zh" ? "zh-CN" : "ja";
+  const title = lang === "zh" ? (CONFIG.titleZh || CONFIG.title) : CONFIG.title;
+  document.title = title;
+  $("title").textContent = title + (CONFIG.className ? "｜" + CONFIG.className : "");
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = L()[el.dataset.i18n]; });
+  $("comment").placeholder = L().placeholder;
+  const btn = $("send"); if (!btn.disabled) btn.textContent = L().send;
+  document.querySelectorAll(".lang").forEach(b => b.setAttribute("aria-pressed", b.dataset.lang === lang));
+  $("msg").className = "msg"; $("msg").textContent = ""; delete $("send").dataset.confirm;
+  renderSongs(); renderTags(); updateCount();
+}
+document.querySelectorAll(".lang").forEach(b => b.onclick = () => { lang = b.dataset.lang; store.set("mc-lang", lang); applyLang(); });
+
+function show(type, text){ const m = $("msg"); m.className = "msg " + type; m.textContent = text; }
+
+function summary(){
+  const t = L();
+  return [
+    CONFIG.className && t.sClass + CONFIG.className,
+    t.sSid + $("sid").value.trim(),
+    t.sName + $("sname").value.trim(),
+    t.sSong + (current ? songLabel(current) : ""),
+    picked.size && t.sImpr + [...picked].map(tagText).join(t.sep),
+    t.sComment + "\n" + $("comment").value.trim()
+  ].filter(Boolean).join("\n");
+}
+
+$("f").addEventListener("submit", async e => {
+  e.preventDefault();
+  const t = L();
+  const sid = $("sid").value.trim(), name = $("sname").value.trim(), c = $("comment").value.trim();
+  if (!sid || !name) return show("ng", t.errInfo);
+  if (!current) return show("ng", t.errSong);
+  if (c.length < MIN) return show("ng", t.errLen(MIN));
+  if (done.has(current) && !$("send").dataset.confirm) {
+    $("send").dataset.confirm = "1";
+    return show("ng", t.again(songLabel(current)));
+  }
+  delete $("send").dataset.confirm;
+
+  store.set("mc-sid", sid); store.set("mc-name", name);
+  $("songField").value = songLabelJa(current);
+  $("tagField").value = [...picked].join("、");
+  $("timeField").value = new Date().toLocaleString("ja-JP");
+
+  const btn = $("send"); btn.disabled = true; btn.textContent = t.sending;
+  try {
+    const body = new URLSearchParams(new FormData($("f"))).toString();
+    if (CONFIG.endpoint) {
+      // Googleスプレッドシート（Apps Script）へ送信
+      const res = await fetch(CONFIG.endpoint, { method:"POST",
+        headers:{ "Content-Type":"application/x-www-form-urlencoded" }, body });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data || !data.ok) throw new Error("not saved");
+    } else {
+      const res = await fetch("/", { method:"POST", headers:{ "Content-Type":"application/x-www-form-urlencoded" }, body });
+      if (!res.ok) throw new Error(res.status);
+    }
+    done.add(current); store.set(doneKey, JSON.stringify([...done]));
+    show("ok", t.ok(songLabel(current)));
+    $("copy").classList.add("hidden");
+    $("comment").value = ""; updateCount();
+    picked.clear(); renderTags();
+    current = null; renderSongs();
+  } catch(err) {
+    show("ng", t.fail);
+    $("copy").classList.remove("hidden");
+  } finally {
+    btn.disabled = false; btn.textContent = L().send;
+  }
+});
+
+$("copy").onclick = async () => {
+  try { await navigator.clipboard.writeText(summary()); show("ok", L().copied); }
+  catch(e){ show("ng", L().copyFail); }
+};
+
+applyLang();
+</script>
+</body>
+</html>

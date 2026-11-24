@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>みんなのコメント｜音楽鑑賞</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14161f; --panel:#1d2030; --ink:#f4f1ea; --sub:#a7a9b8; --line:#2c3044;
+    --c1:#ffcf5c; --c2:#ff8fa3; --c3:#7ad3ff; --c4:#9be08a; --c5:#c9a6ff; --c6:#ffab6b;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN","Hiragino Sans","PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif}
+  body{min-height:100vh;
+    background-image:radial-gradient(circle at 12% 8%,rgba(255,207,92,.10),transparent 32%),
+      radial-gradient(circle at 88% 20%,rgba(122,211,255,.10),transparent 30%),
+      radial-gradient(circle at 50% 100%,rgba(255,143,163,.08),transparent 40%)}
+  header{position:sticky;top:0;z-index:5;background:rgba(20,22,31,.88);backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--line);padding:14px 20px}
+  .top{display:flex;align-items:center;gap:14px;flex-wrap:wrap;max-width:1500px;margin:0 auto}
+  h1{margin:0;font-size:clamp(1.3rem,2.6vw,2rem);font-weight:900;letter-spacing:.04em;display:flex;align-items:center;gap:10px}
+  h1 .note{display:inline-block;animation:bob 2.4s ease-in-out infinite}
+  @keyframes bob{50%{transform:translateY(-4px) rotate(-8deg)}}
+  .count{font-size:clamp(.9rem,1.6vw,1.1rem);color:var(--sub)}
+  .count b{color:var(--c1);font-size:1.5em;font-weight:900;margin:0 2px}
+  .spacer{flex:1}
+  select,.btn{font:inherit;font-size:.9rem;background:var(--panel);color:var(--ink);border:1px solid var(--line);
+    border-radius:999px;padding:8px 14px;cursor:pointer}
+  .btn:hover,select:hover{border-color:#4a5070}
+  .langs{display:inline-flex;border:1px solid var(--line);border-radius:999px;overflow:hidden}
+  .langs button{font:inherit;font-size:.85rem;background:var(--panel);color:var(--sub);border:0;padding:8px 12px;cursor:pointer}
+  .langs button[aria-pressed=true]{background:var(--ink);color:var(--bg);font-weight:700}
+  .live{display:inline-flex;align-items:center;gap:6px;font-size:.8rem;color:var(--sub)}
+  .live i{width:8px;height:8px;border-radius:50%;background:#5be07a;box-shadow:0 0 0 0 rgba(91,224,122,.6);animation:pulse 2s infinite}
+  @keyframes pulse{70%{box-shadow:0 0 0 8px rgba(91,224,122,0)}100%{box-shadow:0 0 0 0 rgba(91,224,122,0)}}
+  .songs{display:flex;gap:8px;overflow-x:auto;max-width:1500px;margin:12px auto 0;padding-bottom:2px;scrollbar-width:none}
+  .songs::-webkit-scrollbar{display:none}
+  .chip{flex:0 0 auto;font:inherit;font-weight:700;font-size:.95rem;border-radius:999px;padding:7px 16px;cursor:pointer;
+    background:transparent;color:var(--ink);border:2px solid var(--line);transition:.15s}
+  .chip small{opacity:.7;font-weight:500;margin-left:4px}
+  .chip[aria-pressed=true]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+  main{max-width:1500px;margin:0 auto;padding:22px 20px 60px}
+  .mood{background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:18px 22px;margin-bottom:22px}
+  .mood h2{margin:0 0 12px;font-size:1rem;color:var(--sub);font-weight:700}
+  .cloud{display:flex;flex-wrap:wrap;gap:10px 14px;align-items:center}
+  .cloud span{font-weight:900;line-height:1.1;border-radius:14px;padding:6px 14px;transition:.3s}
+  .cloud span sup{font-size:.5em;margin-left:3px;opacity:.75}
+  .cloud .empty{color:var(--sub);font-weight:500;padding:0}
+  .wall{columns:4 280px;column-gap:18px}
+  .card{break-inside:avoid;margin:0 0 18px;border-radius:20px;padding:18px 20px 16px;color:#1b1b22;position:relative;
+    box-shadow:0 10px 24px rgba(0,0,0,.25);transform-origin:center top}
+  .card .q{font-size:clamp(1.05rem,1.5vw,1.3rem);font-weight:700;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+  .card .orig{margin-top:8px;font-size:.78rem;font-weight:500;opacity:.62;white-space:pre-wrap;word-break:break-word}
+  .card .meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px;font-size:.78rem}
+  .card .song{font-weight:900;background:rgba(0,0,0,.12);border-radius:999px;padding:3px 10px}
+  .card .tag{background:rgba(255,255,255,.55);border-radius:999px;padding:3px 9px;font-weight:700}
+  .card::before{content:"“";position:absolute;top:-14px;left:14px;font-size:3.4rem;font-weight:900;color:rgba(0,0,0,.18);font-family:Georgia,serif}
+  .card.new{animation:pop .7s cubic-bezier(.2,1.4,.4,1) both}
+  @keyframes pop{0%{opacity:0;transform:translateY(18px) scale(.9) rotate(-2deg)}100%{opacity:1;transform:none}}
+  .card:nth-child(4n+1){rotate:-.6deg}.card:nth-child(4n+2){rotate:.5deg}.card:nth-child(4n+3){rotate:-.3deg}.card:nth-child(4n){rotate:.7deg}
+  .s1{background:var(--c1)}.s2{background:var(--c2)}.s3{background:var(--c3)}.s4{background:var(--c4)}.s5{background:var(--c5)}.s6{background:var(--c6)}
+  .state{text-align:center;color:var(--sub);padding:80px 20px;font-size:1.1rem;line-height:1.9}
+  .state .big{font-size:3rem;display:block;margin-bottom:8px}
+  body.big .card .q{font-size:clamp(1.3rem,2vw,1.8rem)}
+  body.big .wall{columns:3 360px}
+  @media (max-width:640px){ header{padding:12px 14px} main{padding:16px 14px 40px} .hide-sm{display:none} }
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <h1><span class="note">♪</span><span data-i18n="h1"></span></h1>
+    <span class="count" id="count"></span>
+    <span class="spacer"></span>
+    <span class="live hide-sm"><i></i><span data-i18n="live"></span></span>
+    <span class="langs" role="group" aria-label="Language">
+      <button type="button" data-lang="ja">日本語</button><button type="button" data-lang="zh">中文</button>
+    </span>
+    <select id="session"></select>
+    <button class="btn hide-sm" id="bigBtn" type="button" data-i18n="big"></button>
+    <button class="btn hide-sm" id="fsBtn" type="button" data-i18n="fs"></button>
+  </div>
+  <div class="songs" id="songs"></div>
+</header>
+
+<main>
+  <section class="mood">
+    <h2 data-i18n="mood"></h2>
+    <div class="cloud" id="cloud"></div>
+  </section>
+  <div class="wall" id="wall"></div>
+  <div class="state" id="state"><span class="big">🎧</span>…</div>
+</main>
+
+<script>
+/* ===== 設定 ===== */
+const ENDPOINT = "https://script.google.com/macros/s/AKfycbzNfgoGogQ1Lm5CeyxQ5i6GsTMrTtHyF40tFNvkveIK0CifOZWzExPwZN0OwJLd_0ZC/exec";
+const REFRESH_SEC = 10;   // 自動更新の間隔（秒）
+// ↓ 翻訳用Apps ScriptのウェブアプリURL（空なら翻訳せず、書かれたまま表示）
+const TRANSLATE_URL = "https://script.google.com/macros/s/AKfycbwC3Rn-xsCm6EDSwCjG9qCIASS6XD1LbeQc451ea1PJtqZDo1ekYDt5jfIYh8dH-C84aw/exec";
+// 印象タグの中国語表記（入力ページと同じ組み合わせ）
+const TAG_ZH = { "明るい":"明快","切ない":"伤感","力強い":"有力","穏やか":"平和","不思議":"神秘",
+  "懐かしい":"怀旧","かっこいい":"帅气","怖い":"可怕","楽しい":"快乐","美しい":"优美" };
+/* ================= */
+
+const T = {
+  ja: {
+    title: "みんなのコメント｜音楽鑑賞", h1: "みんなのコメント", live: "自動更新", session: "授業回",
+    big: "文字を大きく", fs: "全画面", mood: "みんなが感じた印象", all: "すべて", count: "件のコメント",
+    none: "まだありません", noTags: "まだ印象タグはありません", loading: "読み込み中…",
+    loadErr: "コメントを読み込めませんでした。<br>しばらくしてから再読み込みしてください。",
+    empty: "まだコメントはありません。<br>曲を聴いたら送ってみよう！", emptySong: s => s + "のコメントはまだありません。",
+    date: (mo, da) => mo + "/" + da
+  },
+  zh: {
+    title: "大家的评论｜音乐鉴赏", h1: "大家的评论", live: "自动更新", session: "课次",
+    big: "放大文字", fs: "全屏", mood: "大家感受到的印象", all: "全部", count: "条评论",
+    none: "暂无", noTags: "还没有印象标签", loading: "加载中…",
+    loadErr: "无法加载评论。<br>请稍后重新加载页面。",
+    empty: "还没有评论。<br>听完曲子就来发表吧！", emptySong: s => s + "还没有评论。",
+    date: (mo, da) => mo + "月" + da + "日"
+  }
+};
+
+const $ = id => document.getElementById(id);
+const q = new URLSearchParams(location.search);
+const store = {
+  get(k){ try{ return localStorage.getItem(k) }catch(e){ return null } },
+  set(k,v){ try{ localStorage.setItem(k,v) }catch(e){} }
+};
+let lang = (q.get("lang") || store.get("mc-lang") || (/^zh/i.test(navigator.language || "") ? "zh" : "ja"));
+if (!T[lang]) lang = "ja";
+const L = () => T[lang];
+
+let session = { date: q.get("date") || "", cls: q.get("class") || "" };
+let manual = !!q.get("date");   // 授業回を手動で選んだら、自動で最新回に切り替えない
+let songFilter = q.get("song") ? q.get("song") + "曲目" : "all";
+let items = [];
+let seen = new Set();
+let firstLoad = true;
+let sessionList = [];
+
+const songNum = s => parseInt(String(s).replace(/[^\d]/g, ""), 10) || 0;
+const colorOf = s => "s" + (((songNum(s) || 1) - 1) % 6 + 1);
+const key = it => it.t + "|" + it.comment;
+// 表示用：データは日本語のまま、画面だけ言語に合わせる
+const songText = s => lang === "zh" ? String(s).replace(/^(\d+)曲目/, "第$1首") : s;
+const tagText = t => lang === "zh" && TAG_ZH[t] ? TAG_ZH[t] : t;
+// ===== コメントの自動翻訳 =====
+// 日本語表示：かなを含まず漢字があるコメント（中国語）を日本語に
+// 中国語表示：かなを含むコメント（日本語）を中国語に
+const hasKana = t => /[\u3040-\u30ff]/.test(t);
+const needsTr = c => lang === "ja" ? (!hasKana(c) && /[\u4e00-\u9fff]/.test(c)) : hasKana(c);
+const trCache = new Map(), inflight = new Set();
+const trKey = c => lang + "|" + c;
+async function translatePending(){
+  if (!TRANSLATE_URL) return;
+  const to = lang;
+  const need = [...new Set(items.map(it => it.comment).filter(c => c && needsTr(c)))]
+    .filter(c => !trCache.has(to + "|" + c) && !inflight.has(to + "|" + c));
+  if (!need.length) return;
+  for (let i = 0; i < need.length; i += 20) {
+    const chunk = need.slice(i, i + 20);
+    chunk.forEach(c => inflight.add(to + "|" + c));
+    try {
+      const r = await fetch(TRANSLATE_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ to, texts: chunk }) });
+      const d = await r.json();
+      if (d.ok) chunk.forEach((c, k) => { if (d.texts[k]) trCache.set(to + "|" + c, d.texts[k]); });
+    } catch(e) { /* 翻訳できなくても原文のまま表示。次の更新でまた試す */ }
+    chunk.forEach(c => inflight.delete(to + "|" + c));
+  }
+  if (to === lang) render();
+}
+const splitTags = s => String(s || "").split(/[、,]/).map(x => x.trim()).filter(Boolean);
+
+async function api(params){
+  const u = ENDPOINT + "?" + new URLSearchParams(params).toString();
+  const r = await fetch(u);
+  const d = await r.json();
+  if (!d.ok) throw new Error(d.error || "error");
+  return d;
+}
+
+function renderSessions(){
+  const sel = $("session"); sel.innerHTML = ""; sel.setAttribute("aria-label", L().session);
+  const list = sessionList.slice();
+  if (session.date && !list.some(s => s.date === session.date && s.cls === session.cls)) list.unshift(session);
+  list.forEach(s => {
+    const o = document.createElement("option");
+    o.value = s.date + "|" + s.cls;
+    o.textContent = s.date.replace(/^(\d{4})-(\d{2})-(\d{2})$/, (m,y,mo,da) => L().date(+mo, +da)) + (s.cls ? "　" + s.cls : "");
+    if (s.date === session.date && s.cls === session.cls) o.selected = true;
+    sel.appendChild(o);
+  });
+  if (!list.length) { const o = document.createElement("option"); o.textContent = L().none; sel.appendChild(o); }
+}
+
+async function loadSessions(){
+  try {
+    const d = await api({ action: "list" });
+    sessionList = d.sessions || [];
+    if (!manual && sessionList.length && (sessionList[0].date !== session.date || sessionList[0].cls !== session.cls)) {
+      // 新しい授業回が始まったら自動でそちらに切り替える
+      if (session.date) { songFilter = "all"; items = []; seen = new Set(); firstLoad = true; }
+      session = { date: sessionList[0].date, cls: sessionList[0].cls };
+    }
+    renderSessions();
+  } catch(e) { /* 一覧が取れなくても今日の分は表示を試みる */ }
+}
+
+async function loadItems(){
+  try {
+    const params = {}; if (session.date) params.date = session.date; if (session.cls) params["class"] = session.cls;
+    const d = await api(params);
+    items = (d.items || []).sort((a,b) => a.t - b.t);
+    render();
+  } catch(e) {
+    if (firstLoad) showState("⚠️", L().loadErr);
+  }
+  firstLoad = false;
+}
+
+function showState(icon, html){ $("state").innerHTML = '<span class="big">' + icon + '</span>' + html; $("state").style.display = "block"; }
+
+function render(){
+  // 曲チップ
+  const counts = {};
+  items.forEach(it => counts[it.song] = (counts[it.song] || 0) + 1);
+  const songs = Object.keys(counts).sort((a,b) => songNum(a) - songNum(b));
+  const box = $("songs"); box.innerHTML = "";
+  const mk = (val, label, n) => {
+    const b = document.createElement("button");
+    b.type = "button"; b.className = "chip"; b.setAttribute("aria-pressed", songFilter === val);
+    b.textContent = label; const sm = document.createElement("small"); sm.textContent = n; b.appendChild(sm);
+    b.onclick = () => { songFilter = val; seen = new Set(items.map(key)); render(); };
+    box.appendChild(b);
+  };
+  mk("all", L().all, items.length);
+  songs.forEach(s => mk(s, songText(s), counts[s]));
+
+  const shown = songFilter === "all" ? items : items.filter(it => it.song === songFilter);
+  $("count").innerHTML = "";
+  const b = document.createElement("b"); b.textContent = shown.length;
+  $("count").append(b, document.createTextNode(L().count));
+
+  // 印象クラウド（集計は日本語のタグ名で行い、表示だけ訳す）
+  const tagCount = {};
+  shown.forEach(it => splitTags(it.tags).forEach(t => tagCount[t] = (tagCount[t] || 0) + 1));
+  const tags = Object.entries(tagCount).sort((a,b) => b[1] - a[1]);
+  const cloud = $("cloud"); cloud.innerHTML = "";
+  if (!tags.length) { const s = document.createElement("span"); s.className = "empty"; s.textContent = L().noTags; cloud.appendChild(s); }
+  const max = tags.length ? tags[0][1] : 1;
+  const palette = ["--c1","--c2","--c3","--c4","--c5","--c6"];
+  tags.forEach(([t,n], i) => {
+    const s = document.createElement("span");
+    const size = 1 + 1.4 * (n / max);
+    s.style.fontSize = size + "rem";
+    const c = "var(" + palette[i % palette.length] + ")";
+    s.style.color = c; s.style.background = "color-mix(in srgb, " + c + " 14%, transparent)";
+    s.textContent = tagText(t); const sup = document.createElement("sup"); sup.textContent = n; s.appendChild(sup);
+    cloud.appendChild(s);
+  });
+
+  // カード（新しいものを上に）。コメント本文は生徒が書いたままの言語で表示
+  const wall = $("wall"); wall.innerHTML = "";
+  const list = shown.slice().reverse();
+  list.forEach(it => {
+    const c = document.createElement("article");
+    c.className = "card " + colorOf(it.song) + (!seen.has(key(it)) && !firstLoad ? " new" : "");
+    const p = document.createElement("div"); p.className = "q";
+    const tr = needsTr(it.comment || "") ? trCache.get(trKey(it.comment)) : null;
+    p.textContent = tr || it.comment;
+    const m = document.createElement("div"); m.className = "meta";
+    const sg = document.createElement("span"); sg.className = "song"; sg.textContent = songText(it.song); m.appendChild(sg);
+    splitTags(it.tags).forEach(t => {
+      const tg = document.createElement("span"); tg.className = "tag"; tg.textContent = tagText(t); m.appendChild(tg);
+    });
+    c.append(p);
+    if (tr) { const o = document.createElement("div"); o.className = "orig"; o.textContent = "原文：" + it.comment; c.append(o); }
+    c.append(m); wall.appendChild(c);
+  });
+  items.forEach(it => seen.add(key(it)));
+
+  if (!shown.length) showState("🎵", songFilter === "all" ? L().empty : L().emptySong(songText(songFilter)));
+  else $("state").style.display = "none";
+  translatePending();
+}
+
+function applyLang(){
+  document.documentElement.lang = lang === "zh" ? "zh-CN" : "ja";
+  document.title = L().title;
+  document.querySelectorAll("[data-i18n]").forEach(el => { el.textContent = L()[el.dataset.i18n]; });
+  document.querySelectorAll(".langs button").forEach(b => b.setAttribute("aria-pressed", b.dataset.lang === lang));
+  renderSessions();
+}
+document.querySelectorAll(".langs button").forEach(b => b.onclick = () => {
+  lang = b.dataset.lang; store.set("mc-lang", lang); applyLang();
+  if (!firstLoad) render();
+});
+
+$("session").onchange = e => {
+  const [date, cls] = e.target.value.split("|");
+  session = { date, cls: cls || "" }; manual = true; songFilter = "all"; items = []; seen = new Set(); firstLoad = true;
+  showState("🎧", L().loading); $("wall").innerHTML = ""; loadItems();
+};
+$("bigBtn").onclick = () => { document.body.classList.toggle("big"); };
+$("fsBtn").onclick = () => {
+  const d = document;
+  try { d.fullscreenElement ? d.exitFullscreen() : d.documentElement.requestFullscreen(); } catch(e){}
+};
+
+(async () => {
+  applyLang();
+  showState("🎧", L().loading);
+  await loadSessions();
+  await loadItems();
+  setInterval(async () => { if (document.hidden) return; if (!manual) await loadSessions(); loadItems(); }, REFRESH_SEC * 1000);
+})();
+</script>
+</body>
+</html>
